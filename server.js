@@ -5,11 +5,14 @@ var ShareDB = require('sharedb');
 var WebSocket = require('ws');
 var WebSocketJSONStream = require('@teamwork/websocket-json-stream');
 const SlackBot = require('slackbots');
-const axios = require('axios')
+const axios = require('axios');
+
+const slackBotToken = '';
+const slackBotChannel = '';
 
 const bot = new SlackBot({
-  token: 'xoxb-1345920338561-1342523238182-omiCsW9ApMRLBNoKYieSf74N',
-  name: 'runestonetest1'
+  token: slackBotToken,
+  name: slackBotChannel
 })
 
 var backend = new ShareDB();
@@ -54,7 +57,7 @@ app.get('/hhh', function(req, res) {
   //var runeDoc = connection.get('examples', 'counter');
   runeDoc.fetch(function(err) {
     if (err) throw err;
-    console.log(runeDoc.data);
+    //console.log(runeDoc.data);
     res.send(runeDoc.data);
   });
 })
@@ -104,14 +107,14 @@ bot.on('message', (data) => {
           ts: data.message.ts,
           problem_id: questText.substring(questText.lastIndexOf("#") + 1, questText.lastIndexOf("|"))
         };
-        console.log(data.message.blocks[4].elements);
+        //console.log(data.message.blocks[4].elements);
         doc.data.push(newData);
       }
     }
   }
   else if (data.thread_ts != null && data.subtype == null){
-    console.log("thread_ts");
-    console.log(data);
+    //console.log("thread_ts");
+    //console.log(data);
     doc.fetch(function(err) {
       if (err) throw err;
       if (doc.type === null) {
@@ -125,16 +128,16 @@ bot.on('message', (data) => {
     function acallback() {
       for (var i = 0; i < doc.data.length; i++) {
         if (doc.data[i].ts == data.thread_ts) {
-          console.log(doc.data[i].problem_id);
+          //console.log(doc.data[i].problem_id);
           var runeDoc = connection.get(doc.data[i].problem_id, 'helpSession');
           runeDoc.fetch(function(err) {
             if (err) throw err;
             var index = 0;
-            console.log('RuneDoc'+runeDoc);
+            //console.log('RuneDoc'+runeDoc);
             for (var j = 0; j < runeDoc.data.length; j++) {
               if (runeDoc.data[j].ts == doc.data[i].ts) {
                 index = j;
-                console.log('index'+index);
+                //console.log('index'+index);
                 var answerIndex = runeDoc.data[j].chat.length;
                 const userBody = {
                   user: data.user,
@@ -160,8 +163,8 @@ bot.on('message', (data) => {
                     runeDoc.fetch(function(err) {
                       if (err) throw err;
                       var obj = JSON.parse(str);
-                      console.log(obj);
-                      console.log(runeDoc);
+                      //console.log(obj);
+                      //console.log(runeDoc);
                       if (answerIndex ==  0) {
                         var newData = {
                           index: answerIndex,
