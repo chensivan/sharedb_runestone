@@ -1,9 +1,7 @@
 # Simple realtime client/server sync with ShareDB
 
-![Demo](demo.gif)
-
 This is a simple websocket server that exposes the ShareDB protocol,
-with a client showing an incrementing number that is sychronized
+with a client showing an incrementing number that is synchronized
 across all open browser tabs.
 
 In this demo, data is not persisted. To persist data, run a Mongo
