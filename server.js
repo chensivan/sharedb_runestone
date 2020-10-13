@@ -139,13 +139,10 @@ bot.on('message', (data) => {
                 index = j;
                 //console.log('index'+index);
                 var answerIndex = runeDoc.data[j].chat.length;
-                const userBody = {
-                  user: data.user,
-                  token: 'xoxb-1345920338561-1342523238182-omiCsW9ApMRLBNoKYieSf74N'
-                };
+
                 var options = {
                   host: 'slack.com',
-                  path: '/api/users.info?token=xoxb-1345920338561-1342523238182-omiCsW9ApMRLBNoKYieSf74N&user=' + data.user + '&pretty=1',
+                  path: '/api/users.info?token=' + slackBotToken + '&user=' + data.user + '&pretty=1',
                   method: 'GET'
                 };
                 
@@ -168,7 +165,7 @@ bot.on('message', (data) => {
                       if (answerIndex ==  0) {
                         var newData = {
                           index: answerIndex,
-                          user: obj.user.name,
+                          user: obj.user.real_name,
                           code: runeDoc.data[index].code,
                           answer: data.text,
                           pointers: [],
@@ -183,7 +180,7 @@ bot.on('message', (data) => {
                       var latestNewCode = runeDoc.data[index].chat[answerIndex - 1].latestNewCodeIndex;
                       var newData = {
                         index: answerIndex,
-                        user: obj.user.name,
+                        user: obj.user.real_name,
                         code: null,
                         answer: data.text,
                         pointers: [],
