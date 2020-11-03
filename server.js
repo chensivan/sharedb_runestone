@@ -4,15 +4,18 @@ var express = require('express');
 var ShareDB = require('sharedb');
 var WebSocket = require('ws');
 var WebSocketJSONStream = require('@teamwork/websocket-json-stream');
-const SlackBot = require('slackbots');
-const axios = require('axios');
+var SlackBot = require('slackbots');
+var emoji = require('node-emoji');
+var marked = require("marked");
 
 const slackBotToken = '';
-const slackBotChannel = '';
+const slackBotName = 'runestone bot';
+const channelName = 'a-project';
+const startChat = 'runestone test';
 
 const bot = new SlackBot({
   token: slackBotToken,
-  name: slackBotChannel
+  name: slackBotName
 })
 
 var backend = new ShareDB();
@@ -48,7 +51,7 @@ function startServer() {
   });
 
   server.listen(3000);
-console.log('Listening on http://localhost:3000');
+  console.log('Listening on http://localhost:3000');
 }
 
 app.get('/hhh', function(req, res) {
@@ -69,8 +72,8 @@ bot.on('start', () => {
   }
 
   bot.postMessageToChannel(
-      'a-project',
-      'runestone test',
+      channelName,
+      startChat,
       params
   );
 })
@@ -82,7 +85,7 @@ bot.on('message', (data) => {
   }
 
   if (data.subtype == 'message_replied') {
-    //console.log("message_replied");
+    console.log("Receive message from runestone");
     doc.fetch(function(err) {
       if (err) throw err;
       if (doc.type === null) {
@@ -107,14 +110,11 @@ bot.on('message', (data) => {
           ts: data.message.ts,
           problem_id: questText.substring(questText.lastIndexOf("#") + 1, questText.lastIndexOf("|"))
         };
-        //console.log(data.message.blocks[4].elements);
         doc.data.push(newData);
       }
     }
   }
   else if (data.thread_ts != null && data.subtype == null){
-    //console.log("thread_ts");
-    //console.log(data);
     doc.fetch(function(err) {
       if (err) throw err;
       if (doc.type === null) {
@@ -128,18 +128,15 @@ bot.on('message', (data) => {
     function acallback() {
       for (var i = 0; i < doc.data.length; i++) {
         if (doc.data[i].ts == data.thread_ts) {
-          //console.log(doc.data[i].problem_id);
+          console.log("---------------------Cut-off---------------------")
           var runeDoc = connection.get(doc.data[i].problem_id, 'helpSession');
           runeDoc.fetch(function(err) {
             if (err) throw err;
             var index = 0;
-            //console.log('RuneDoc'+runeDoc);
             for (var j = 0; j < runeDoc.data.length; j++) {
               if (runeDoc.data[j].ts == doc.data[i].ts) {
                 index = j;
-                //console.log('index'+index);
                 var answerIndex = runeDoc.data[j].chat.length;
-
                 var options = {
                   host: 'slack.com',
                   path: '/api/users.info?token=' + slackBotToken + '&user=' + data.user + '&pretty=1',
@@ -148,26 +145,53 @@ bot.on('message', (data) => {
                 
                 usercallback = function(response) {
                   var str = '';
-                
                   //another chunk of data has been received, so append it to `str`
                   response.on('data', function (chunk) {
                     str += chunk;
                   });
-                
                   //the whole response has been received, so we just print it out here
                   response.on('end', function () {
                     var runeDoc = connection.get(doc.data[i].problem_id, 'helpSession');
                     runeDoc.fetch(function(err) {
                       if (err) throw err;
                       var obj = JSON.parse(str);
-                      //console.log(obj);
-                      //console.log(runeDoc);
+                      console.log("Send message from slack");
+                      console.log(data);
+
+                      // TODO: link & bold features
+                      // Override function
+                      const renderer = {
+                        em(text) {
+                          return `<strong>${text}</strong>`;
+                        }, 
+                        link(text) {
+                          var index = text.indexOf('|');
+                          var http = text.substring(0, index);
+                          var str = text.substring(index + 1, text.length);
+                          return `<a href="${http}">${str}</a>`;
+                        }
+                      };
+
+                      marked.use({ renderer });
+                      var answer = marked.parseInline(emoji.emojify(data.text));
+                      if (data.files != undefined){
+                        var fileLink = "";
+                        for (var i = 0; i < data.files.length; ++i){
+                          fileLink += " <a href=" + data.files[i].url_private + " target='_blank'>" + data.files[i].name + "</a> ";
+                        }
+                        if (data.text == ""){
+                          answer = "Check for the uploaded file: " + fileLink;
+                        } else {
+                          answer = marked.parseInline(emoji.emojify(data.text)) + fileLink;
+                        }
+                      };
+                      console.log(answer);
                       if (answerIndex ==  0) {
                         var newData = {
                           index: answerIndex,
                           user: obj.user.real_name,
                           code: runeDoc.data[index].code,
-                          answer: data.text,
+                          answer: answer,
                           pointers: [],
                           likes: [],
                           latestNewCodeIndex: 0,
@@ -182,7 +206,7 @@ bot.on('message', (data) => {
                         index: answerIndex,
                         user: obj.user.real_name,
                         code: null,
-                        answer: data.text,
+                        answer: answer,
                         pointers: [],
                         likes: [],
                         latestNewCodeIndex: latestNewCode,
